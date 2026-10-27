@@ -5,6 +5,10 @@ export class Group extends Shape {
   readonly kind = "g";
   private readonly children: Shape[] = [];
 
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+
   get items(): readonly Shape[] {
     return this.children;
   }
@@ -58,16 +62,29 @@ export class Group extends Shape {
   }
 
   scale(factor: number): void {
+    if (!Number.isFinite(factor) || factor <= 0) throw new Error("scale factor must be positive");
     for (const child of this.children) child.scale(factor);
   }
 
   setAttribute(name: string, value: string): void {
-    throw new Error(`unknown group attribute: ${name}`);
+    if (name === "fill") this.fill = value;
+    else if (name === "stroke") this.stroke = value;
+    else if (name === "stroke-width") {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) throw new Error(`invalid number for stroke-width: ${value}`);
+      this.strokeWidth = parsed;
+    } else throw new Error(`unknown attribute: ${name}`);
   }
 
   toSvg(indent = ""): string {
     const inner = this.children.map((child) => child.toSvg(`${indent}  `)).join("\n");
-    if (inner.length === 0) return `${indent}<g id="${escapeSvg(this.id)}"/>`;
-    return `${indent}<g id="${escapeSvg(this.id)}">\n${inner}\n${indent}</g>`;
+    const attributes = [
+      `id="${escapeSvg(this.id)}"`,
+      this.fill === undefined ? "" : `fill="${escapeSvg(this.fill)}"`,
+      this.stroke === undefined ? "" : `stroke="${escapeSvg(this.stroke)}"`,
+      this.strokeWidth === undefined ? "" : `stroke-width="${this.strokeWidth}"`,
+    ].filter(Boolean).join(" ");
+    if (inner.length === 0) return `${indent}<g ${attributes}/>`;
+    return `${indent}<g ${attributes}>\n${inner}\n${indent}</g>`;
   }
 }

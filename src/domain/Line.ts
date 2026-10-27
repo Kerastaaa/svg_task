@@ -11,6 +11,8 @@ export class Line extends Shape {
     public x2: number,
     public y2: number,
     public stroke?: string,
+    public fill?: string,
+    public strokeWidth?: number,
   ) {
     super(id);
   }
@@ -31,7 +33,9 @@ export class Line extends Shape {
   }
 
   setAttribute(name: string, value: string): void {
-    if (name === "stroke") this.stroke = value;
+    if (name === "fill") this.fill = value;
+    else if (name === "stroke") this.stroke = value;
+    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
     else if (name === "x1") this.x1 = parseNumberAttribute(name, value);
     else if (name === "y1") this.y1 = parseNumberAttribute(name, value);
     else if (name === "x2") this.x2 = parseNumberAttribute(name, value);
@@ -40,7 +44,7 @@ export class Line extends Shape {
   }
 
   toSvg(indent = ""): string {
-    return `${indent}<line id="${escapeSvg(this.id)}" x1="${this.x1}" y1="${this.y1}" x2="${this.x2}" y2="${this.y2}"${optionalAttribute("stroke", this.stroke)}/>`;
+    return `${indent}<line id="${escapeSvg(this.id)}" x1="${this.x1}" y1="${this.y1}" x2="${this.x2}" y2="${this.y2}"${optionalAttribute("fill", this.fill)}${optionalAttribute("stroke", this.stroke)}${optionalAttribute("stroke-width", this.strokeWidth)}/>`;
   }
 
   private assertPositiveFactor(factor: number): void {

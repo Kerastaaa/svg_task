@@ -6,8 +6,8 @@ export function escapeSvg(value: string): string {
     .replaceAll(">", "&gt;");
 }
 
-export function optionalAttribute(name: string, value: string | undefined): string {
-  return value === undefined ? "" : ` ${name}="${escapeSvg(value)}"`;
+export function optionalAttribute(name: string, value: string | number | undefined): string {
+  return value === undefined ? "" : ` ${name}="${escapeSvg(String(value))}"`;
 }
 
 export function parseNumberAttribute(name: string, value: string): number {

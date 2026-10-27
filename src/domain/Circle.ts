@@ -10,6 +10,8 @@ export class Circle extends Shape {
     public cy: number,
     public r: number,
     public fill?: string,
+    public stroke?: string,
+    public strokeWidth?: number,
   ) {
     super(id);
   }
@@ -28,6 +30,8 @@ export class Circle extends Shape {
 
   setAttribute(name: string, value: string): void {
     if (name === "fill") this.fill = value;
+    else if (name === "stroke") this.stroke = value;
+    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
     else if (name === "cx") this.cx = parseNumberAttribute(name, value);
     else if (name === "cy") this.cy = parseNumberAttribute(name, value);
     else if (name === "r") this.r = parseNumberAttribute(name, value);
@@ -35,7 +39,7 @@ export class Circle extends Shape {
   }
 
   toSvg(indent = ""): string {
-    return `${indent}<circle id="${escapeSvg(this.id)}" cx="${this.cx}" cy="${this.cy}" r="${this.r}"${optionalAttribute("fill", this.fill)}/>`;
+    return `${indent}<circle id="${escapeSvg(this.id)}" cx="${this.cx}" cy="${this.cy}" r="${this.r}"${optionalAttribute("fill", this.fill)}${optionalAttribute("stroke", this.stroke)}${optionalAttribute("stroke-width", this.strokeWidth)}/>`;
   }
 
   private assertPositiveFactor(factor: number): void {

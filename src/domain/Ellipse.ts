@@ -11,6 +11,8 @@ export class Ellipse extends Shape {
     public rx: number,
     public ry: number,
     public fill?: string,
+    public stroke?: string,
+    public strokeWidth?: number,
   ) {
     super(id);
   }
@@ -30,6 +32,8 @@ export class Ellipse extends Shape {
 
   setAttribute(name: string, value: string): void {
     if (name === "fill") this.fill = value;
+    else if (name === "stroke") this.stroke = value;
+    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
     else if (name === "cx") this.cx = parseNumberAttribute(name, value);
     else if (name === "cy") this.cy = parseNumberAttribute(name, value);
     else if (name === "rx") this.rx = parseNumberAttribute(name, value);
@@ -38,7 +42,7 @@ export class Ellipse extends Shape {
   }
 
   toSvg(indent = ""): string {
-    return `${indent}<ellipse id="${escapeSvg(this.id)}" cx="${this.cx}" cy="${this.cy}" rx="${this.rx}" ry="${this.ry}"${optionalAttribute("fill", this.fill)}/>`;
+    return `${indent}<ellipse id="${escapeSvg(this.id)}" cx="${this.cx}" cy="${this.cy}" rx="${this.rx}" ry="${this.ry}"${optionalAttribute("fill", this.fill)}${optionalAttribute("stroke", this.stroke)}${optionalAttribute("stroke-width", this.strokeWidth)}/>`;
   }
 
   private assertPositiveFactor(factor: number): void {

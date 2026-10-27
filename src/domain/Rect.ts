@@ -11,6 +11,8 @@ export class Rect extends Shape {
     public width: number,
     public height: number,
     public fill?: string,
+    public stroke?: string,
+    public strokeWidth?: number,
   ) {
     super(id);
   }
@@ -30,6 +32,8 @@ export class Rect extends Shape {
 
   setAttribute(name: string, value: string): void {
     if (name === "fill") this.fill = value;
+    else if (name === "stroke") this.stroke = value;
+    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
     else if (name === "x") this.x = parseNumberAttribute(name, value);
     else if (name === "y") this.y = parseNumberAttribute(name, value);
     else if (name === "width") this.width = parseNumberAttribute(name, value);
@@ -38,7 +42,7 @@ export class Rect extends Shape {
   }
 
   toSvg(indent = ""): string {
-    return `${indent}<rect id="${escapeSvg(this.id)}" x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}"${optionalAttribute("fill", this.fill)}/>`;
+    return `${indent}<rect id="${escapeSvg(this.id)}" x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}"${optionalAttribute("fill", this.fill)}${optionalAttribute("stroke", this.stroke)}${optionalAttribute("stroke-width", this.strokeWidth)}/>`;
   }
 
   private assertPositiveFactor(factor: number): void {
