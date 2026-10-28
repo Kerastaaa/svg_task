@@ -1,6 +1,16 @@
 import { DocumentModel } from "../domain/Document.js";
 import { ShapeFactory } from "../factory/ShapeFactory.js";
 import { CommandRegistry } from "../commands/CommandRegistry.js";
+import { CreateShapeCommand } from "../commands/CreateShapeCommand.js";
+import { DeleteShapeCommand } from "../commands/DeleteShapeCommand.js";
+import { MoveCommand } from "../commands/MoveCommand.js";
+import { ScaleCommand } from "../commands/ScaleCommand.js";
+import { SetAttributeCommand } from "../commands/SetAttributeCommand.js";
+import { GroupCommand } from "../commands/GroupCommand.js";
+import { UngroupCommand } from "../commands/UngroupCommand.js";
+import { AddToCommand } from "../commands/AddToCommand.js";
+import { ReorderCommand, type ReorderDirection } from "../commands/ReorderCommand.js";
+import { CommandHistory } from "../history/CommandHistory.js";
 import { QueryFormatter } from "../query/QueryFormatter.js";
 import { tokenize } from "./Tokenizer.js";
 
@@ -9,6 +19,7 @@ export class CliApplication {
   private readonly factory = new ShapeFactory();
   private readonly query = new QueryFormatter();
   private readonly registry = new CommandRegistry();
+  private readonly history = new CommandHistory();
 
   constructor() {
     this.registerCommands();
@@ -38,8 +49,16 @@ export class CliApplication {
     this.registry.register("move", (args) => [this.move(args)]);
     this.registry.register("scale", (args) => [this.scale(args)]);
     this.registry.register("set", (args) => [this.set(args)]);
+    this.registry.register("delete", (args) => [this.delete(args)]);
+    this.registry.register("group", (args) => [this.group(args)]);
+    this.registry.register("ungroup", (args) => [this.ungroup(args)]);
+    this.registry.register("addto", (args) => [this.addTo(args)]);
+    this.registry.register("front", (args) => [this.reorder(args, "front")]);
+    this.registry.register("back", (args) => [this.reorder(args, "back")]);
+    this.registry.register("undo", (args) => [this.undo(args)]);
+    this.registry.register("redo", (args) => [this.redo(args)]);
 
-    for (const name of ["read", "save", "delete", "group", "ungroup", "addto", "front", "back", "undo", "redo"]) {
+    for (const name of ["read", "save"]) {
       this.registry.register(name, () => {
         throw new Error(`command not implemented yet: ${name}`);
       });
@@ -51,6 +70,7 @@ export class CliApplication {
     const width = args.length === 2 ? this.number("width", this.required(args, 0)) : 800;
     const height = args.length === 2 ? this.number("height", this.required(args, 1)) : 600;
     this.document = new DocumentModel(width, height);
+    this.history.blockAfterIo();
     return `canvas ${width}x${height} created`;
   }
 
@@ -59,6 +79,7 @@ export class CliApplication {
     if (args.length === 0) return `canvas ${document.width}x${document.height}`;
     if (args.length !== 2) throw new Error("usage: canvas [w] [h]");
     document.resize(this.number("width", this.required(args, 0)), this.number("height", this.required(args, 1)));
+    this.history.blockAfterIo();
     return `canvas resized to ${document.width}x${document.height}`;
   }
 
@@ -79,10 +100,7 @@ export class CliApplication {
     }
 
     const shape = this.factory.create(type, id, shapeArgs);
-    document.add(shape, parentId);
-    return parentId === undefined
-      ? `${shape.kind}#${shape.id} created`
-      : `${shape.kind}#${shape.id} created in g#${parentId}`;
+    return this.history.execute(new CreateShapeCommand(document, shape, parentId));
   }
 
   private tree(args: string[]): string {
@@ -100,16 +118,14 @@ export class CliApplication {
     const shape = this.requireShape(this.required(args, 0));
     const dx = this.number("dx", this.required(args, 1));
     const dy = this.number("dy", this.required(args, 2));
-    shape.move(dx, dy);
-    return `${shape.kind}#${shape.id} moved by (${dx},${dy})`;
+    return this.history.execute(new MoveCommand(shape, dx, dy));
   }
 
   private scale(args: string[]): string {
     if (args.length !== 2) throw new Error("usage: scale <id> <factor>");
     const shape = this.requireShape(this.required(args, 0));
     const factor = this.number("factor", this.required(args, 1));
-    shape.scale(factor);
-    return `${shape.kind}#${shape.id} scaled by ${factor}`;
+    return this.history.execute(new ScaleCommand(shape, factor));
   }
 
   private set(args: string[]): string {
@@ -117,8 +133,45 @@ export class CliApplication {
     const shape = this.requireShape(this.required(args, 0));
     const attribute = this.required(args, 1);
     const value = this.required(args, 2);
-    shape.setAttribute(attribute, value);
-    return `${shape.kind}#${shape.id} updated: ${attribute}=${value}`;
+    return this.history.execute(new SetAttributeCommand(shape, attribute, value));
+  }
+
+  private delete(args: string[]): string {
+    if (args.length !== 1) throw new Error("usage: delete <id>");
+    return this.history.execute(new DeleteShapeCommand(this.requireDocument(), this.required(args, 0)));
+  }
+
+  private group(args: string[]): string {
+    if (args.length < 2) throw new Error("usage: group <newGid> <id1> <id2>...");
+    const groupId = this.required(args, 0);
+    return this.history.execute(new GroupCommand(this.requireDocument(), groupId, args.slice(1)));
+  }
+
+  private ungroup(args: string[]): string {
+    if (args.length !== 1) throw new Error("usage: ungroup <gid>");
+    return this.history.execute(new UngroupCommand(this.requireDocument(), this.required(args, 0)));
+  }
+
+  private addTo(args: string[]): string {
+    if (args.length !== 2) throw new Error("usage: addto <id> <containerId>");
+    return this.history.execute(
+      new AddToCommand(this.requireDocument(), this.required(args, 0), this.required(args, 1)),
+    );
+  }
+
+  private reorder(args: string[], direction: ReorderDirection): string {
+    if (args.length !== 1) throw new Error(`usage: ${direction} <id>`);
+    return this.history.execute(new ReorderCommand(this.requireShape(this.required(args, 0)), direction));
+  }
+
+  private undo(args: string[]): string {
+    if (args.length !== 0) throw new Error("usage: undo");
+    return this.history.undo();
+  }
+
+  private redo(args: string[]): string {
+    if (args.length !== 0) throw new Error("usage: redo");
+    return this.history.redo();
   }
 
   private requireDocument(): DocumentModel {
@@ -153,7 +206,7 @@ export class CliApplication {
       "History: undo, redo",
       "Session: exit, quit",
       "",
-      "Implemented today: init, canvas, create, tree, show, move, scale, set.",
+      "Implemented through Day 3: create/delete, move/scale/set, group/ungroup/addto, front/back, undo/redo.",
     ].join("\n");
   }
 }

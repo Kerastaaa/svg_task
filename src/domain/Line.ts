@@ -32,10 +32,21 @@ export class Line extends Shape {
     this.y2 *= factor;
   }
 
-  setAttribute(name: string, value: string): void {
+  getAttribute(name: string): string | undefined {
+    if (name === "fill") return this.fill;
+    if (name === "stroke") return this.stroke;
+    if (name === "stroke-width") return this.strokeWidth?.toString();
+    if (name === "x1") return this.x1.toString();
+    if (name === "y1") return this.y1.toString();
+    if (name === "x2") return this.x2.toString();
+    if (name === "y2") return this.y2.toString();
+    throw new Error(`unknown attribute: ${name}`);
+  }
+
+  setAttribute(name: string, value: string | undefined): void {
     if (name === "fill") this.fill = value;
     else if (name === "stroke") this.stroke = value;
-    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
+    else if (name === "stroke-width") this.strokeWidth = value === undefined ? undefined : parseNumberAttribute(name, value);
     else if (name === "x1") this.x1 = parseNumberAttribute(name, value);
     else if (name === "y1") this.y1 = parseNumberAttribute(name, value);
     else if (name === "x2") this.x2 = parseNumberAttribute(name, value);

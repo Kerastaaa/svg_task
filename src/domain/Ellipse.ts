@@ -30,10 +30,21 @@ export class Ellipse extends Shape {
     this.ry *= factor;
   }
 
-  setAttribute(name: string, value: string): void {
+  getAttribute(name: string): string | undefined {
+    if (name === "fill") return this.fill;
+    if (name === "stroke") return this.stroke;
+    if (name === "stroke-width") return this.strokeWidth?.toString();
+    if (name === "cx") return this.cx.toString();
+    if (name === "cy") return this.cy.toString();
+    if (name === "rx") return this.rx.toString();
+    if (name === "ry") return this.ry.toString();
+    throw new Error(`unknown attribute: ${name}`);
+  }
+
+  setAttribute(name: string, value: string | undefined): void {
     if (name === "fill") this.fill = value;
     else if (name === "stroke") this.stroke = value;
-    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
+    else if (name === "stroke-width") this.strokeWidth = value === undefined ? undefined : parseNumberAttribute(name, value);
     else if (name === "cx") this.cx = parseNumberAttribute(name, value);
     else if (name === "cy") this.cy = parseNumberAttribute(name, value);
     else if (name === "rx") this.rx = parseNumberAttribute(name, value);

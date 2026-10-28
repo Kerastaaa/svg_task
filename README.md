@@ -2,7 +2,7 @@
 
 TypeScript command-line SVG editor for Lab1 Phase 1.
 
-Current status: Day 2 complete. The CLI now supports init, canvas, create, tree, show, move, scale, and set. Command-based undo/redo begins on Day 3.
+Current status: Day 3 complete. The CLI supports structural editing commands and command-based undo/redo. SVG read/save remains planned for Day 4.
 
 ## 开始开发
 

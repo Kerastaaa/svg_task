@@ -10,7 +10,8 @@ export function optionalAttribute(name: string, value: string | number | undefin
   return value === undefined ? "" : ` ${name}="${escapeSvg(String(value))}"`;
 }
 
-export function parseNumberAttribute(name: string, value: string): number {
+export function parseNumberAttribute(name: string, value: string | undefined): number {
+  if (value === undefined) throw new Error(`attribute cannot be removed: ${name}`);
   const number = Number(value);
   if (!Number.isFinite(number)) throw new Error(`invalid number for ${name}: ${value}`);
   return number;

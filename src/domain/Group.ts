@@ -5,9 +5,9 @@ export class Group extends Shape {
   readonly kind = "g";
   private readonly children: Shape[] = [];
 
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
+  fill: string | undefined;
+  stroke: string | undefined;
+  strokeWidth: number | undefined;
 
   get items(): readonly Shape[] {
     return this.children;
@@ -66,10 +66,21 @@ export class Group extends Shape {
     for (const child of this.children) child.scale(factor);
   }
 
-  setAttribute(name: string, value: string): void {
+  getAttribute(name: string): string | undefined {
+    if (name === "fill") return this.fill;
+    if (name === "stroke") return this.stroke;
+    if (name === "stroke-width") return this.strokeWidth?.toString();
+    throw new Error(`unknown attribute: ${name}`);
+  }
+
+  setAttribute(name: string, value: string | undefined): void {
     if (name === "fill") this.fill = value;
     else if (name === "stroke") this.stroke = value;
     else if (name === "stroke-width") {
+      if (value === undefined) {
+        this.strokeWidth = undefined;
+        return;
+      }
       const parsed = Number(value);
       if (!Number.isFinite(parsed)) throw new Error(`invalid number for stroke-width: ${value}`);
       this.strokeWidth = parsed;

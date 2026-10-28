@@ -23,7 +23,9 @@ export abstract class Shape {
 
   abstract scale(factor: number): void;
 
-  abstract setAttribute(name: string, value: string): void;
+  abstract getAttribute(name: string): string | undefined;
+
+  abstract setAttribute(name: string, value: string | undefined): void;
 
   abstract toSvg(indent?: string): string;
 }

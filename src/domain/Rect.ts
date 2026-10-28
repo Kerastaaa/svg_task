@@ -30,10 +30,21 @@ export class Rect extends Shape {
     this.height *= factor;
   }
 
-  setAttribute(name: string, value: string): void {
+  getAttribute(name: string): string | undefined {
+    if (name === "fill") return this.fill;
+    if (name === "stroke") return this.stroke;
+    if (name === "stroke-width") return this.strokeWidth?.toString();
+    if (name === "x") return this.x.toString();
+    if (name === "y") return this.y.toString();
+    if (name === "width") return this.width.toString();
+    if (name === "height") return this.height.toString();
+    throw new Error(`unknown attribute: ${name}`);
+  }
+
+  setAttribute(name: string, value: string | undefined): void {
     if (name === "fill") this.fill = value;
     else if (name === "stroke") this.stroke = value;
-    else if (name === "stroke-width") this.strokeWidth = parseNumberAttribute(name, value);
+    else if (name === "stroke-width") this.strokeWidth = value === undefined ? undefined : parseNumberAttribute(name, value);
     else if (name === "x") this.x = parseNumberAttribute(name, value);
     else if (name === "y") this.y = parseNumberAttribute(name, value);
     else if (name === "width") this.width = parseNumberAttribute(name, value);
