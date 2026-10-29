@@ -12,6 +12,10 @@ describe("Day 2 CLI", () => {
       "40",
       "My Diagram",
     ]);
+    expect(tokenize('read "D:\\diagrams\\my file.svg"')).toEqual([
+      "read",
+      "D:\\diagrams\\my file.svg",
+    ]);
   });
 
   it("creates a nested flowchart and displays it", () => {

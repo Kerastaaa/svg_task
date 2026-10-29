@@ -4,12 +4,19 @@ export function tokenize(input: string): string[] {
   let quoted = false;
   let escaping = false;
 
-  for (const character of input.trim()) {
+  const source = input.trim();
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index]!;
     if (escaping) {
       current += character;
       escaping = false;
     } else if (quoted && character === "\\") {
-      escaping = true;
+      const next = source[index + 1];
+      if (next === '"' || next === "\\") {
+        escaping = true;
+      } else {
+        current += character;
+      }
     } else if (character === '"') {
       quoted = !quoted;
     } else if (/\s/.test(character) && !quoted) {

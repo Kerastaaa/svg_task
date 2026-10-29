@@ -11,6 +11,7 @@ import { UngroupCommand } from "../commands/UngroupCommand.js";
 import { AddToCommand } from "../commands/AddToCommand.js";
 import { ReorderCommand, type ReorderDirection } from "../commands/ReorderCommand.js";
 import { CommandHistory } from "../history/CommandHistory.js";
+import { SvgFileService } from "../io/SvgFileService.js";
 import { QueryFormatter } from "../query/QueryFormatter.js";
 import { tokenize } from "./Tokenizer.js";
 
@@ -20,6 +21,8 @@ export class CliApplication {
   private readonly query = new QueryFormatter();
   private readonly registry = new CommandRegistry();
   private readonly history = new CommandHistory();
+  private readonly files = new SvgFileService();
+  private currentPath: string | undefined;
 
   constructor() {
     this.registerCommands();
@@ -58,11 +61,8 @@ export class CliApplication {
     this.registry.register("undo", (args) => [this.undo(args)]);
     this.registry.register("redo", (args) => [this.redo(args)]);
 
-    for (const name of ["read", "save"]) {
-      this.registry.register(name, () => {
-        throw new Error(`command not implemented yet: ${name}`);
-      });
-    }
+    this.registry.register("read", (args) => this.read(args));
+    this.registry.register("save", (args) => [this.save(args)]);
   }
 
   private init(args: string[]): string {
@@ -70,8 +70,30 @@ export class CliApplication {
     const width = args.length === 2 ? this.number("width", this.required(args, 0)) : 800;
     const height = args.length === 2 ? this.number("height", this.required(args, 1)) : 600;
     this.document = new DocumentModel(width, height);
+    this.currentPath = undefined;
     this.history.blockAfterIo();
     return `canvas ${width}x${height} created`;
+  }
+
+  private read(args: string[]): string[] {
+    if (args.length !== 1) throw new Error("usage: read <file.svg>");
+    const path = this.required(args, 0);
+    const result = this.files.read(path);
+    this.document = result.document;
+    this.currentPath = path;
+    this.history.blockAfterIo();
+    return [...result.warnings, `read ${path} (${result.elementCount} elements)`];
+  }
+
+  private save(args: string[]): string {
+    if (args.length > 1) throw new Error("usage: save [file.svg]");
+    const document = this.requireDocument();
+    const path = args[0] ?? this.currentPath;
+    if (!path) throw new Error("no file path specified; use 'save <file.svg>'");
+    const count = this.files.save(path, document);
+    this.currentPath = path;
+    this.history.blockAfterIo();
+    return `saved to ${path} (${count} elements)`;
   }
 
   private canvas(args: string[]): string {
@@ -206,7 +228,7 @@ export class CliApplication {
       "History: undo, redo",
       "Session: exit, quit",
       "",
-      "Implemented through Day 3: create/delete, move/scale/set, group/ungroup/addto, front/back, undo/redo.",
+      "Implemented: SVG read/save, create/delete, move/scale/set, group/ungroup/addto, front/back, undo/redo.",
     ].join("\n");
   }
 }

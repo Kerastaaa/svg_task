@@ -2,7 +2,7 @@
 
 TypeScript command-line SVG editor for Lab1 Phase 1.
 
-Current status: Day 3 complete. The CLI supports structural editing commands and command-based undo/redo. SVG read/save remains planned for Day 4.
+Current status: SVG file I/O is implemented. The CLI reads and writes nested SVG documents with the built-in shapes, common paint attributes, and translate/uniform-scale group transforms.
 
 ## 开始开发
 
