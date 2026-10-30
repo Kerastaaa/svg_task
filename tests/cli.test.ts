@@ -51,6 +51,16 @@ describe("Day 2 CLI", () => {
     expect(details).toContain("parent=svg");
     expect(details).toContain("x=30 y=20 w=200 h=100");
     expect(details).toContain("fill=blue");
+    expect(details).toContain("stroke-width=2");
+  });
+
+  it("lists complete command syntax in help", () => {
+    const help = new CliApplication().executeLine("help")[0] ?? "";
+    expect(help).toContain("create <type> <id> [params...] [in <containerId>]");
+    expect(help).toContain("group <newGid> <id1> <id2>...");
+    expect(help).toContain("addto <gid> <id>");
+    expect(help).toContain("read <file.svg>");
+    expect(help).toContain("undo, redo");
   });
 
   it("rejects invalid commands without changing the document", () => {

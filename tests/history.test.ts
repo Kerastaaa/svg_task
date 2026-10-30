@@ -153,7 +153,7 @@ describe("Day 3 command history", () => {
     run(app, "create g target");
     run(app, "create rect c 0 0 1 1");
 
-    run(app, "addto b target");
+    run(app, "addto target b");
     expect(run(app, "tree target")).toContain("#b");
     run(app, "undo");
     expectOrder(run(app, "tree"), "a", "b", "target", "c");

@@ -1,15 +1,16 @@
 # SVG Editor CLI
 
-TypeScript command-line SVG editor for Lab1 Phase 1.
+TypeScript command-line SVG editor for Lab1 Phase 1. It supports nested Composite shapes, Command-based undo/redo, structural editing, and SVG file round-trips.
 
-Current status: SVG file I/O is implemented. The CLI reads and writes nested SVG documents with the built-in shapes, common paint attributes, and translate/uniform-scale group transforms.
-
-## 开始开发
+## Run
 
 ```text
 npm install
-npm run cli
-npm test
 npm run build
+npm test
+npm run cli
 ```
-架构文档见 `doc/README.md`。
+
+Inside the REPL, run `help` for complete command syntax. The required architecture, process record, consistency review, and quality evidence are in [`doc/README.md`](doc/README.md).
+
+Supported built-in SVG elements: `rect`, `circle`, `ellipse`, `line`, `text`, and `g`.

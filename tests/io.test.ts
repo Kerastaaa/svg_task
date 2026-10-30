@@ -38,7 +38,8 @@ describe("SVG file I/O", () => {
     expect(first.document.width).toBe(400);
     expect(first.document.height).toBe(200);
     expect(first.elementCount).toBe(8);
-    expect(first.document.findById("r1")?.getAttribute("fill")).toBe("navy");
+    expect(first.document.findById("scene")?.getAttribute("fill")).toBe("navy");
+    expect(first.document.findById("r1")?.getAttribute("fill")).toBeUndefined();
     expect(first.document.findById("t1")?.getAttribute("text")).toBe("A & B");
 
     const second = parser.parse(serializer.serialize(first.document));

@@ -51,20 +51,28 @@ export class QueryFormatter {
   }
 
   private attributes(shape: Shape): string[] {
-    if (shape instanceof Group) return [`children=${shape.items.length}`];
-    if (shape instanceof Rect) return [`x=${shape.x} y=${shape.y} w=${shape.width} h=${shape.height}`, ...this.optionalColor(shape.fill)];
-    if (shape instanceof Circle) return [`cx=${shape.cx} cy=${shape.cy} r=${shape.r}`, ...this.optionalColor(shape.fill)];
-    if (shape instanceof Ellipse) return [`cx=${shape.cx} cy=${shape.cy} rx=${shape.rx} ry=${shape.ry}`, ...this.optionalColor(shape.fill)];
-    if (shape instanceof Line) return [`x1=${shape.x1} y1=${shape.y1} x2=${shape.x2} y2=${shape.y2}`, ...this.optionalColor(shape.stroke, "stroke")];
-    if (shape instanceof Text) return [`x=${shape.x} y=${shape.y}`, `text="${shape.content}"`, ...this.optionalColor(shape.fill)];
+    if (shape instanceof Group) return [`children=${shape.items.length}`, ...this.paintAttributes(shape)];
+    if (shape instanceof Rect) return [`x=${shape.x} y=${shape.y} w=${shape.width} h=${shape.height}`, ...this.paintAttributes(shape)];
+    if (shape instanceof Circle) return [`cx=${shape.cx} cy=${shape.cy} r=${shape.r}`, ...this.paintAttributes(shape)];
+    if (shape instanceof Ellipse) return [`cx=${shape.cx} cy=${shape.cy} rx=${shape.rx} ry=${shape.ry}`, ...this.paintAttributes(shape)];
+    if (shape instanceof Line) return [`x1=${shape.x1} y1=${shape.y1} x2=${shape.x2} y2=${shape.y2}`, ...this.paintAttributes(shape)];
+    if (shape instanceof Text) return [`x=${shape.x} y=${shape.y}`, `text="${shape.content}"`, ...this.paintAttributes(shape)];
     return [];
+  }
+
+  private paintAttributes(shape: Shape): string[] {
+    return [
+      this.optionalAttribute("fill", shape.getAttribute("fill")),
+      this.optionalAttribute("stroke", shape.getAttribute("stroke")),
+      this.optionalAttribute("stroke-width", shape.getAttribute("stroke-width")),
+    ].filter((value): value is string => value !== undefined);
   }
 
   private color(value: string | undefined, name = "fill"): string {
     return value === undefined ? "" : ` ${name}=${value}`;
   }
 
-  private optionalColor(value: string | undefined, name = "fill"): string[] {
-    return value === undefined ? [] : [`${name}=${value}`];
+  private optionalAttribute(name: string, value: string | undefined): string | undefined {
+    return value === undefined ? undefined : `${name}=${value}`;
   }
 }

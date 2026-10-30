@@ -1,3 +1,3 @@
 # Query module
 
-Day 2 will place `tree`, `show`, and other read-only presentation logic here.
+`QueryFormatter` implements the read-only `tree` and `show` views. It may inspect the domain model but must not mutate shapes, document structure, or command history.

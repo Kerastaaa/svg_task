@@ -8,7 +8,17 @@ import { Text } from "../domain/Text.js";
 
 type NumberParser = (name: string, value: string) => number;
 
+export interface SvgShapeInput {
+  attributes: Record<string, string>;
+  text: string;
+  transform: { scale: number; x: number; y: number };
+}
+
 export class ShapeFactory {
+  supports(type: string): boolean {
+    return type === "rect" || type === "circle" || type === "ellipse" || type === "line" || type === "text" || type === "g";
+  }
+
   create(type: string, id: string, args: string[]): Shape {
     const number = this.parseNumber;
     switch (type) {
@@ -35,6 +45,60 @@ export class ShapeFactory {
     }
   }
 
+  createFromSvg(type: string, id: string, input: SvgShapeInput): Shape {
+    const { attributes, text, transform } = input;
+    const point = (xName: string, yName: string): [number, number] => [
+      this.svgNumber(xName, attributes[xName]) * transform.scale + transform.x,
+      this.svgNumber(yName, attributes[yName]) * transform.scale + transform.y,
+    ];
+    let shape: Shape;
+
+    switch (type) {
+      case "rect": {
+        const [x, y] = point("x", "y");
+        shape = new Rect(id, x, y,
+          this.svgNumber("width", attributes.width) * transform.scale,
+          this.svgNumber("height", attributes.height) * transform.scale);
+        break;
+      }
+      case "circle": {
+        const [cx, cy] = point("cx", "cy");
+        shape = new Circle(id, cx, cy, this.svgNumber("r", attributes.r) * transform.scale);
+        break;
+      }
+      case "ellipse": {
+        const [cx, cy] = point("cx", "cy");
+        shape = new Ellipse(id, cx, cy,
+          this.svgNumber("rx", attributes.rx) * transform.scale,
+          this.svgNumber("ry", attributes.ry) * transform.scale);
+        break;
+      }
+      case "line": {
+        const [x1, y1] = point("x1", "y1");
+        const [x2, y2] = point("x2", "y2");
+        shape = new Line(id, x1, y1, x2, y2);
+        break;
+      }
+      case "text": {
+        const [x, y] = point("x", "y");
+        shape = new Text(id, x, y, text);
+        break;
+      }
+      case "g":
+        shape = new Group(id);
+        break;
+      default:
+        throw new Error(`unknown shape type: ${type} (is the plugin loaded?)`);
+    }
+
+    if (attributes.fill !== undefined) shape.setAttribute("fill", attributes.fill);
+    if (attributes.stroke !== undefined) shape.setAttribute("stroke", attributes.stroke);
+    if (attributes["stroke-width"] !== undefined) {
+      shape.setAttribute("stroke-width", String(this.svgNumber("stroke-width", attributes["stroke-width"]) * transform.scale));
+    }
+    return shape;
+  }
+
   private readonly parseNumber: NumberParser = (name, value) => {
     if (value === undefined) throw new Error(`missing numeric argument: ${name}`);
     const parsed = Number(value);
@@ -52,5 +116,12 @@ export class ShapeFactory {
     const value = args[index];
     if (value === undefined) throw new Error("missing create argument");
     return value;
+  }
+
+  private svgNumber(name: string, value: string | undefined): number {
+    if (value === undefined) throw new Error(`missing SVG attribute: ${name}`);
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) throw new Error(`invalid SVG ${name}: ${value}`);
+    return parsed;
   }
 }

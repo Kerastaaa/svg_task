@@ -1,0 +1,23 @@
+@startuml
+skinparam componentStyle rectangle
+component CLI
+component Commands
+component History
+component Domain
+component Factory
+component IO
+component Query
+
+CLI --> Commands : creates / executes
+CLI --> History : undo / redo
+CLI --> Factory : create shape
+CLI --> IO : read / save
+CLI --> Query : tree / show
+CLI --> Domain : current document
+Commands --> Domain : mutate model
+History --> Commands : stores Command
+Factory --> Domain : constructs Shape
+IO --> Factory : parse element by type
+IO --> Domain : document / serialization
+Query --> Domain : read-only formatting
+@enduml

@@ -175,9 +175,9 @@ export class CliApplication {
   }
 
   private addTo(args: string[]): string {
-    if (args.length !== 2) throw new Error("usage: addto <id> <containerId>");
+    if (args.length !== 2) throw new Error("usage: addto <gid> <id>");
     return this.history.execute(
-      new AddToCommand(this.requireDocument(), this.required(args, 0), this.required(args, 1)),
+      new AddToCommand(this.requireDocument(), this.required(args, 1), this.required(args, 0)),
     );
   }
 
@@ -222,13 +222,25 @@ export class CliApplication {
 
   private helpText(): string {
     return [
-      "Document: init [w] [h], read <file.svg>, save [file.svg], canvas [w] [h]",
-      "Edit: create, delete, move, scale, set, group, ungroup, addto, front, back",
+      "Document:",
+      "  init [w] [h]",
+      "  read <file.svg>",
+      "  save [file.svg]",
+      "  canvas [w] [h]",
+      "Edit:",
+      "  create <type> <id> [params...] [in <containerId>]",
+      "  delete <id>",
+      "  move <id> <dx> <dy>",
+      "  scale <id> <factor>",
+      "  set <id> <attr> <value>",
+      "  group <newGid> <id1> <id2>...",
+      "  ungroup <gid>",
+      "  addto <gid> <id>",
+      "  front <id>",
+      "  back <id>",
       "View: tree [id], show <id>, help",
       "History: undo, redo",
       "Session: exit, quit",
-      "",
-      "Implemented: SVG read/save, create/delete, move/scale/set, group/ungroup/addto, front/back, undo/redo.",
     ].join("\n");
   }
 }

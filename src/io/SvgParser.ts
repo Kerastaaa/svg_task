@@ -1,15 +1,9 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
-import { Circle } from "../domain/Circle.js";
 import { DocumentModel } from "../domain/Document.js";
-import { Ellipse } from "../domain/Ellipse.js";
 import { Group } from "../domain/Group.js";
-import { Line } from "../domain/Line.js";
-import { Rect } from "../domain/Rect.js";
-import { Text } from "../domain/Text.js";
-import type { Shape } from "../domain/Shape.js";
+import { ShapeFactory } from "../factory/ShapeFactory.js";
 
 type XmlNode = Record<string, unknown>;
-type CommonAttributes = { fill?: string | undefined; stroke?: string | undefined; strokeWidth?: number | undefined };
 type Transform = { scale: number; x: number; y: number };
 
 export interface SvgParseResult {
@@ -28,6 +22,8 @@ const parser = new XMLParser({
 });
 
 export class SvgParser {
+  private readonly factory = new ShapeFactory();
+
   parse(source: string): SvgParseResult {
     const validation = XMLValidator.validate(source);
     if (validation !== true) {
@@ -82,63 +78,28 @@ export class SvgParser {
       parent: Group,
       nodes: XmlNode[],
       inheritedTransform: Transform,
-      inheritedAttributes: CommonAttributes,
     ): void => {
       for (const node of nodes) {
         const tag = this.tagName(node);
         if (!tag || tag === "#text" || tag === "#comment") continue;
-        if (tag !== "g" && tag !== "rect" && tag !== "circle" && tag !== "ellipse" && tag !== "line" && tag !== "text") {
-          continue;
-        }
+        if (!this.factory.supports(tag)) continue;
 
         const attributes = this.attributes(node);
         const id = assignId(tag, attributes);
         const transform = this.combine(inheritedTransform, this.parseTransform(attributes.transform));
-        const common = this.commonAttributes(attributes, inheritedAttributes);
-        let shape: Shape;
-
-        if (tag === "g") {
-          const group = new Group(id);
-          group.fill = common.fill;
-          group.stroke = common.stroke;
-          group.strokeWidth = common.strokeWidth;
-          parent.add(group);
-          elementCount += 1;
-          parseChildren(group, this.children(node), transform, common);
-          continue;
-        } else if (tag === "rect") {
-          const x = this.coordinate(attributes.x, "x");
-          const y = this.coordinate(attributes.y, "y");
-          shape = new Rect(id, transform.scale * x + transform.x, transform.scale * y + transform.y,
-            this.coordinate(attributes.width, "width") * transform.scale,
-            this.coordinate(attributes.height, "height") * transform.scale,
-            common.fill, common.stroke, common.strokeWidth);
-        } else if (tag === "circle") {
-          const [cx, cy] = this.point(attributes.cx, attributes.cy, transform);
-          shape = new Circle(id, cx, cy, this.coordinate(attributes.r, "r") * transform.scale,
-            common.fill, common.stroke, common.strokeWidth);
-        } else if (tag === "ellipse") {
-          const [cx, cy] = this.point(attributes.cx, attributes.cy, transform);
-          shape = new Ellipse(id, cx, cy, this.coordinate(attributes.rx, "rx") * transform.scale,
-            this.coordinate(attributes.ry, "ry") * transform.scale,
-            common.fill, common.stroke, common.strokeWidth);
-        } else if (tag === "line") {
-          const [x1, y1] = this.point(attributes.x1, attributes.y1, transform);
-          const [x2, y2] = this.point(attributes.x2, attributes.y2, transform);
-          shape = new Line(id, x1, y1, x2, y2, common.stroke, common.fill,
-            common.strokeWidth === undefined ? undefined : common.strokeWidth * transform.scale);
-        } else {
-          const [x, y] = this.point(attributes.x, attributes.y, transform);
-          shape = new Text(id, x, y, this.textContent(node), common.fill, common.stroke,
-            common.strokeWidth === undefined ? undefined : common.strokeWidth * transform.scale);
-        }
+        const shape = this.factory.createFromSvg(tag, id, {
+          attributes,
+          text: this.textContent(node),
+          transform,
+        });
 
         parent.add(shape);
         elementCount += 1;
+        if (shape instanceof Group) parseChildren(shape, this.children(node), transform);
       }
     };
 
-    parseChildren(document.root, this.children(rootNode), { scale: 1, x: 0, y: 0 }, {});
+    parseChildren(document.root, this.children(rootNode), { scale: 1, x: 0, y: 0 });
     return { document, warnings, elementCount };
   }
 
@@ -160,18 +121,6 @@ export class SvgParser {
       .map(([key, value]) => [key.slice(2), String(value)]));
   }
 
-  private commonAttributes(
-    attributes: Record<string, string>,
-    inherited: CommonAttributes,
-  ): CommonAttributes {
-    const fill = attributes.fill ?? inherited.fill;
-    const stroke = attributes.stroke ?? inherited.stroke;
-    const strokeWidth = attributes["stroke-width"] === undefined
-      ? inherited.strokeWidth
-      : this.coordinate(attributes["stroke-width"], "stroke-width");
-    return { fill, stroke, strokeWidth };
-  }
-
   private parseViewBox(value: string | undefined): { width: number; height: number } | undefined {
     if (value === undefined) return undefined;
     const parts = value.trim().split(/[\s,]+/).map(Number);
@@ -188,20 +137,6 @@ export class SvgParser {
     const dimension = Number(match[1]);
     if (!Number.isFinite(dimension) || dimension <= 0) throw new Error(`invalid SVG ${name}: ${value}`);
     return dimension;
-  }
-
-  private coordinate(value: string | undefined, name: string): number {
-    if (value === undefined) throw new Error(`missing SVG attribute: ${name}`);
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) throw new Error(`invalid SVG ${name}: ${value}`);
-    return parsed;
-  }
-
-  private point(x: string | undefined, y: string | undefined, transform: Transform): [number, number] {
-    return [
-      transform.scale * this.coordinate(x, "x") + transform.x,
-      transform.scale * this.coordinate(y, "y") + transform.y,
-    ];
   }
 
   private parseTransform(value: string | undefined): Transform {
